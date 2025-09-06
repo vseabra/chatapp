@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"chatapp/internal/chatroom"
 	"chatapp/internal/config"
 	"chatapp/internal/db"
 	server "chatapp/internal/http"
@@ -35,13 +36,17 @@ func main() {
 
 	r := server.NewRouter()
 
-	// Compose services and handlers
 	userRepo := user.NewRepository(database)
 	userService := user.NewService(userRepo)
 	userController := user.NewHandler(userService)
 
+	roomRepo := chatroom.NewRepository(database)
+	roomService := chatroom.NewService(roomRepo)
+	roomHandler := chatroom.NewHandler(roomService)
+
 	// Register routes
 	userController.RegisterRoutes(r)
+	roomHandler.RegisterRoutes(r, cfg.JWTSecret)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,

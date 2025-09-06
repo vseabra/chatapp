@@ -31,6 +31,10 @@ func BuildIndexes(ctx context.Context, db *mongo.Database) error {
 		return fmt.Errorf("error ensuring user indexes: %v", err)
 	}
 
+	if err := BuildChatRoomIndexes(ctx, db); err != nil {
+		return fmt.Errorf("error ensuring chatroom indexes: %v", err)
+	}
+
 	return nil
 }
 
@@ -45,6 +49,24 @@ func BuildUserIndexes(ctx context.Context, db *mongo.Database) error {
 	if err != nil {
 		log.Printf("error creating users.email unique index: %v", err)
 		return err
+	}
+	return nil
+}
+
+// BuildChatRoomIndexes ensures indexes for the chatrooms collection.
+func BuildChatRoomIndexes(ctx context.Context, db *mongo.Database) error {
+	rooms := db.Collection("chatrooms")
+	models := []mongo.IndexModel{
+		{
+			Keys:    map[string]int{"ownerId": 1},
+			Options: options.Index().SetName("idx_chatrooms_owner"),
+		},
+	}
+	for _, m := range models {
+		if _, err := rooms.Indexes().CreateOne(ctx, m); err != nil {
+			log.Printf("error creating chatroom index: %v", err)
+			return err
+		}
 	}
 	return nil
 }
