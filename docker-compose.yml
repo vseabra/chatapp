@@ -1,0 +1,25 @@
+services:
+  chat-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "9999:9999"
+      - "6060:6060"
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    environment:
+      MONGODB_URI: "mongodb://root:W4d1v6tyYu@mongodb:27017/chat?authSource=admin"
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: W4d1v6tyYu
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongodb:/data/db:rw
