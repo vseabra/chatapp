@@ -53,6 +53,7 @@ func (h *Handler) handleLogin(c *gin.Context) {
 	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), constants.TIMEOUT_SECONDS)
 	defer cancel()
+
 	cfg := config.Load()
 	resp, err := h.service.Login(ctx, req, cfg.JWTSecret, cfg.JWTExpires)
 	if err != nil {
