@@ -1,0 +1,17 @@
+FROM golang:latest AS dev
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+EXPOSE 8080
+
+ENV PORT=8080
+ENV GIN_MODE=debug
+
+CMD ["go", "run", "./cmd/chatapp"]
+
+

@@ -4,13 +4,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     ports:
-      - "9999:9999"
-      - "6060:6060"
+      - "8080:8080"
     depends_on:
       - mongodb
     restart: unless-stopped
     environment:
       MONGODB_URI: "mongodb://root:W4d1v6tyYu@mongodb:27017/chat?authSource=admin"
+      PORT: 8080
 
   mongodb:
     image: mongo:6.0
