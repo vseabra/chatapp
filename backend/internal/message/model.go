@@ -11,6 +11,7 @@ type Message struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	RoomID    string             `bson:"roomId" json:"roomId"`
 	UserID    string             `bson:"userId" json:"userId"`
+	UserName  string             `bson:"userName" json:"userName"`
 	Text      string             `bson:"text" json:"text"`
 	Type      string             `bson:"type" json:"type"`
 	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`

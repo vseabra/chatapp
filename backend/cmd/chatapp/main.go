@@ -20,10 +20,9 @@ func main() {
 	cfg := config.Load()
 	timeout := 10 * time.Second
 
-	// Short-lived startup context
 	startupCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	// Long-lived app context for background consumers
+
 	appCtx := context.Background()
 
 	client, err := db.ConnectMongo(startupCtx, cfg.MongoURI)
@@ -60,7 +59,7 @@ func main() {
 	msgHandler.RegisterRoutes(r, cfg.JWTSecret)
 
 	// WebSocket hub
-	hub := ws.NewHub()
+	hub := ws.BuildHub()
 
 	amq, err := events.NewAMQP(startupCtx, cfg.RabbitMQURI, "chat.events")
 	if err != nil {
@@ -74,10 +73,12 @@ func main() {
 	hub.RegisterRoutes(r, cfg)
 
 	// Start consumers
-	ingress := &events.IngressConsumer{AMQP: amq, Service: msgService}
+	ingress := &events.IngressConsumer{AMQP: amq, Service: msgService, Users: userRepo}
 	_ = ingress.Start(appCtx)
 	broadcast := &events.BroadcastConsumer{AMQP: amq, Hub: hub}
 	_ = broadcast.Start(appCtx)
+	botResp := &events.BotResponseConsumer{AMQP: amq, Service: msgService}
+	_ = botResp.Start(appCtx)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,

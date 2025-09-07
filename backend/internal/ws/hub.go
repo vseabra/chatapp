@@ -20,7 +20,7 @@ type Hub struct {
 	pub      *Publisher
 }
 
-func NewHub() *Hub {
+func BuildHub() *Hub {
 	return &Hub{
 		byRoom: make(map[string]map[*websocket.Conn]struct{}),
 		upgrader: websocket.Upgrader{

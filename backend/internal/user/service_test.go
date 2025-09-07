@@ -15,6 +15,7 @@ import (
 type mockRepository struct {
 	createFn      func(ctx context.Context, u *User) error
 	findByEmailFn func(ctx context.Context, email string) (*User, error)
+	findByIDFn    func(ctx context.Context, id string) (*User, error)
 }
 
 func (m *mockRepository) Create(ctx context.Context, u *User) error {
@@ -27,6 +28,13 @@ func (m *mockRepository) Create(ctx context.Context, u *User) error {
 func (m *mockRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	if m.findByEmailFn != nil {
 		return m.findByEmailFn(ctx, email)
+	}
+	return nil, mongo.ErrNoDocuments
+}
+
+func (m *mockRepository) FindByID(ctx context.Context, id string) (*User, error) {
+	if m.findByIDFn != nil {
+		return m.findByIDFn(ctx, id)
 	}
 	return nil, mongo.ErrNoDocuments
 }
