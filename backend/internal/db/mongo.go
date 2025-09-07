@@ -35,6 +35,10 @@ func BuildIndexes(ctx context.Context, db *mongo.Database) error {
 		return fmt.Errorf("error ensuring chatroom indexes: %v", err)
 	}
 
+	if err := BuildMessageIndexes(ctx, db); err != nil {
+		return fmt.Errorf("error ensuring message indexes: %v", err)
+	}
+
 	return nil
 }
 
@@ -65,6 +69,24 @@ func BuildChatRoomIndexes(ctx context.Context, db *mongo.Database) error {
 	for _, m := range models {
 		if _, err := rooms.Indexes().CreateOne(ctx, m); err != nil {
 			log.Printf("error creating chatroom index: %v", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// BuildMessageIndexes ensures indexes for the messages collection.
+func BuildMessageIndexes(ctx context.Context, db *mongo.Database) error {
+	col := db.Collection("messages")
+	models := []mongo.IndexModel{
+		{
+			Keys:    map[string]int{"roomId": 1},
+			Options: options.Index().SetName("idx_messages_room"),
+		},
+	}
+	for _, m := range models {
+		if _, err := col.Indexes().CreateOne(ctx, m); err != nil {
+			log.Printf("error creating message index: %v", err)
 			return err
 		}
 	}

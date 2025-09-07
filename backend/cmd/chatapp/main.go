@@ -9,18 +9,24 @@ import (
 	"chatapp/internal/chatroom"
 	"chatapp/internal/config"
 	"chatapp/internal/db"
+	"chatapp/internal/events"
 	server "chatapp/internal/http"
+	"chatapp/internal/message"
 	"chatapp/internal/user"
+	"chatapp/internal/ws"
 )
 
 func main() {
 	cfg := config.Load()
 	timeout := 10 * time.Second
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	// Short-lived startup context
+	startupCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+	// Long-lived app context for background consumers
+	appCtx := context.Background()
 
-	client, err := db.ConnectMongo(ctx, cfg.MongoURI)
+	client, err := db.ConnectMongo(startupCtx, cfg.MongoURI)
 	if err != nil {
 		log.Fatalf("failed to connect mongo: %v", err)
 	}
@@ -30,7 +36,7 @@ func main() {
 	}()
 
 	database := client.Database(cfg.MongoDB)
-	if err := db.BuildIndexes(ctx, database); err != nil {
+	if err := db.BuildIndexes(startupCtx, database); err != nil {
 		log.Fatalf("failed ensuring indexes: %v", err)
 	}
 
@@ -44,9 +50,34 @@ func main() {
 	roomService := chatroom.NewService(roomRepo)
 	roomHandler := chatroom.NewHandler(roomService)
 
+	msgRepo := message.NewRepository(database)
+	msgService := message.NewService(msgRepo)
+	msgHandler := message.NewHandler(msgService)
+
 	// Register routes
 	userController.RegisterRoutes(r)
 	roomHandler.RegisterRoutes(r, cfg.JWTSecret)
+	msgHandler.RegisterRoutes(r, cfg.JWTSecret)
+
+	// WebSocket hub
+	hub := ws.NewHub()
+
+	amq, err := events.NewAMQP(startupCtx, cfg.RabbitMQURI, "chat.events")
+	if err != nil {
+		log.Fatalf("failed to connect rabbitmq: %v", err)
+	}
+	defer amq.Close()
+
+	// Wire publisher and register ws routes
+	pub := &ws.Publisher{AMQP: amq}
+	hub.WithPublisher(pub)
+	hub.RegisterRoutes(r, cfg)
+
+	// Start consumers
+	ingress := &events.IngressConsumer{AMQP: amq, Service: msgService}
+	_ = ingress.Start(appCtx)
+	broadcast := &events.BroadcastConsumer{AMQP: amq, Hub: hub}
+	_ = broadcast.Start(appCtx)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
