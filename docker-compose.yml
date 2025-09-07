@@ -7,10 +7,13 @@ services:
       - "8080:8080"
     depends_on:
       - mongodb
+      - rabbitmq
     restart: unless-stopped
     environment:
       MONGODB_URI: "mongodb://root:W4d1v6tyYu@mongodb:27017/chat?authSource=admin"
+      JWT_SECRET: "dev-secret-change-me"
       PORT: 8080
+      RABBITMQ_URI: "amqp://guest:guest@rabbitmq:5672/"
 
   mongodb:
     image: mongo:6.0
@@ -23,3 +26,16 @@ services:
       - "27017:27017"
     volumes:
       - ./data/mongodb:/data/db:rw
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # RabbitMQ broker
+      - "15672:15672" # RabbitMQ Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq:rw
