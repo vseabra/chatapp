@@ -12,6 +12,6 @@ EXPOSE 8080
 ENV PORT=8080
 ENV GIN_MODE=debug
 
-CMD ["go", "run", "./cmd/chatapp"]
+CMD ["go", "run", "./cmd/stockbot"]
 
 
