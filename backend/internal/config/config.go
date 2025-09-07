@@ -17,10 +17,7 @@ type AppConfig struct {
 
 // Load returns configuration populated from environment variables with sane defaults.
 func Load() AppConfig {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	port := getEnv("PORT", "8080")
 
 	mongoURI := os.Getenv("MONGODB_URI")
 	if mongoURI == "" {
@@ -34,19 +31,14 @@ func Load() AppConfig {
 		return AppConfig{}
 	}
 
-	mongoDB := os.Getenv("MONGODB_DB")
-	if mongoDB == "" {
-		mongoDB = "chat"
-	}
+	mongoDB := getEnv("MONGODB_DB", "chat")
 
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		jwtSecret = "dev-secret-change-me"
+	jwtSecret := getEnv("JWT_SECRET", "dev-secret-change-me")
+	if os.Getenv("JWT_SECRET") == "" {
 		log.Printf("JWT_SECRET not set, using development default")
 	}
-	jwtExpires := os.Getenv("JWT_EXPIRES_IN")
-	if jwtExpires == "" {
-		jwtExpires = "24h"
+	jwtExpires := getEnv("JWT_EXPIRES_IN", "24h")
+	if os.Getenv("JWT_EXPIRES_IN") == "" {
 		log.Printf("JWT_EXPIRES_IN not set, using default: %s", jwtExpires)
 	}
 
@@ -58,4 +50,13 @@ func Load() AppConfig {
 		JWTExpires:  jwtExpires,
 		RabbitMQURI: rabbitMQURI,
 	}
+}
+
+// getEnv returns env var value or the provided default when empty.
+func getEnv(key, def string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	return v
 }

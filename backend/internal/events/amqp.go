@@ -14,21 +14,33 @@ type AMQP struct {
 }
 
 func NewAMQP(ctx context.Context, uri string, exchange string) (*AMQP, error) {
-	conn, err := amqp.Dial(uri)
-	if err != nil {
-		return nil, err
+	deadline := time.Now().Add(60 * time.Second)
+	var lastErr error
+	for attempt := 0; time.Now().Before(deadline); attempt++ {
+		conn, err := amqp.Dial(uri)
+		if err == nil {
+			ch, chErr := conn.Channel()
+			if chErr == nil {
+				if err := ch.ExchangeDeclare(exchange, "topic", true, false, false, false, nil); err == nil {
+					return &AMQP{conn: conn, channel: ch, exchange: exchange}, nil
+				}
+				lastErr = err
+				_ = ch.Close()
+				_ = conn.Close()
+			} else {
+				lastErr = chErr
+				_ = conn.Close()
+			}
+		} else {
+			lastErr = err
+		}
+		sleep := time.Duration(200*(1<<attempt)) * time.Millisecond
+		if sleep > 3*time.Second {
+			sleep = 3 * time.Second
+		}
+		time.Sleep(sleep)
 	}
-	ch, err := conn.Channel()
-	if err != nil {
-		_ = conn.Close()
-		return nil, err
-	}
-	if err := ch.ExchangeDeclare(exchange, "topic", true, false, false, false, nil); err != nil {
-		_ = ch.Close()
-		_ = conn.Close()
-		return nil, err
-	}
-	return &AMQP{conn: conn, channel: ch, exchange: exchange}, nil
+	return nil, lastErr
 }
 
 func (a *AMQP) Close() {
