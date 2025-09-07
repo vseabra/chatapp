@@ -7,11 +7,12 @@ import (
 
 // AppConfig holds application configuration values.
 type AppConfig struct {
-	Port       string
-	MongoURI   string
-	MongoDB    string
-	JWTSecret  string
-	JWTExpires string
+	Port        string
+	MongoURI    string
+	RabbitMQURI string
+	MongoDB     string
+	JWTSecret   string
+	JWTExpires  string
 }
 
 // Load returns configuration populated from environment variables with sane defaults.
@@ -23,8 +24,14 @@ func Load() AppConfig {
 
 	mongoURI := os.Getenv("MONGODB_URI")
 	if mongoURI == "" {
-		mongoURI = "mongodb://root:example@mongodb:27017/chat?authSource=admin"
-		log.Printf("MONGODB_URI not set, using default: %s", mongoURI)
+		log.Fatalf("MONGODB_URI is required")
+		return AppConfig{}
+	}
+
+	rabbitMQURI := os.Getenv("RABBITMQ_URI")
+	if rabbitMQURI == "" {
+		log.Fatalf("RABBITMQ_URI is required")
+		return AppConfig{}
 	}
 
 	mongoDB := os.Getenv("MONGODB_DB")
@@ -44,10 +51,11 @@ func Load() AppConfig {
 	}
 
 	return AppConfig{
-		Port:       port,
-		MongoURI:   mongoURI,
-		MongoDB:    mongoDB,
-		JWTSecret:  jwtSecret,
-		JWTExpires: jwtExpires,
+		Port:        port,
+		MongoURI:    mongoURI,
+		MongoDB:     mongoDB,
+		JWTSecret:   jwtSecret,
+		JWTExpires:  jwtExpires,
+		RabbitMQURI: rabbitMQURI,
 	}
 }
