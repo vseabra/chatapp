@@ -24,7 +24,14 @@ func (r *Registry) Register(command string, handler Handler) {
 
 // Dispatch routes a request to the appropriate handler by command.
 func (r *Registry) Dispatch(req contracts.BotRequest) (contracts.BotResponseSubmit, bool) {
-	key := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(req.Command)), "/")
+	cmd := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(req.Command)), "/")
+
+	// Extract command part before '=' if present (e.g., "stock=aapl.usxd" -> "stock")
+	key := cmd
+	if i := strings.Index(cmd, "="); i >= 0 {
+		key = strings.TrimSpace(cmd[:i])
+	}
+
 	if h, ok := r.commandToHandler[key]; ok {
 		return h(req)
 	}
