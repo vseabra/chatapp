@@ -1,10 +1,56 @@
+import { useEffect, useRef, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { useMessages } from '@/contexts/MessageContext'
 import { MessageItem } from './MessageItem'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Loader2 } from 'lucide-react'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Button } from '@/components/ui/button'
+import { Loader2, ArrowDown, ChevronUp } from 'lucide-react'
 
 export function MessageList() {
-  const { messages, isLoading, error } = useMessages()
+  const { roomId } = useParams<{ roomId: string }>()
+  const {
+    messages,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMoreMessages,
+    loadMoreMessages
+  } = useMessages()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages])
+
+  // Show/hide scroll to bottom button based on scroll position
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLDivElement
+    const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100
+    setShowScrollButton(!isNearBottom)
+  }
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+      setShowScrollButton(false)
+    }
+  }
+
+  const handleLoadMore = async () => {
+    if (roomId && !isLoadingMore) {
+      try {
+        await loadMoreMessages(roomId)
+      } catch (error) {
+        console.error('Failed to load more messages:', error)
+      }
+    }
+  }
 
   if (isLoading) {
     return (
@@ -45,8 +91,44 @@ export function MessageList() {
   }
 
   return (
-    <ScrollArea className="flex-1">
-      <div className="space-y-0">
+    <div className="relative h-full">
+      <ScrollArea className="h-full w-full rounded-md">
+      <div
+        className="min-h-full p-4 space-y-0"
+        onScroll={handleScroll}
+      >
+        {/* Load More Button */}
+        {hasMoreMessages && (
+          <div className="flex justify-center py-4">
+            <Button
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Load More Messages
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Loading indicator for load more */}
+        {isLoadingMore && (
+          <div className="flex justify-center py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          </div>
+        )}
+
         {messages.map((message, index) => {
           // Show avatar only if the previous message is from a different user
           const showAvatar = index === 0 || messages[index - 1].userId !== message.userId
@@ -61,8 +143,20 @@ export function MessageList() {
         })}
       </div>
 
-      {/* Auto-scroll anchor */}
-      <div id="messages-end" className="h-4" />
-    </ScrollArea>
+        {/* Auto-scroll anchor */}
+        <div ref={messagesEndRef} className="h-4" />
+      </ScrollArea>
+
+      {/* Scroll to bottom button */}
+      {showScrollButton && messages.length > 5 && (
+        <Button
+          onClick={scrollToBottom}
+          className="absolute bottom-4 right-4 rounded-full shadow-lg"
+          size="sm"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
   )
 }
