@@ -13,6 +13,7 @@ type AppConfig struct {
 	RequestedRoutingKey string
 	ResponseRoutingKey  string
 	QueueName           string
+	StockCSVURLTemplate string
 }
 
 // Load returns configuration populated from environment variables with sane defaults.
@@ -31,6 +32,7 @@ func Load() AppConfig {
 		RequestedRoutingKey: getEnv("RABBITMQ_KEY_REQUESTED", "bot.requested"),
 		ResponseRoutingKey:  getEnv("RABBITMQ_KEY_RESPONSE", "bot.response.submit"),
 		QueueName:           getEnv("RABBITMQ_QUEUE", "bot.stockbot"),
+		StockCSVURLTemplate: getEnv("STOCK_CSV_URL_TEMPLATE", "https://stooq.com/q/l/?s={{symbol}}&f=sd2t2ohlcv&h&e=csv"),
 	}
 }
 

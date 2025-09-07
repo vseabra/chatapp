@@ -6,7 +6,11 @@ import (
 
 	"stockbot/config"
 	botamqp "stockbot/internal/amqp"
+	"stockbot/internal/commands"
+	"stockbot/internal/contracts"
 	"stockbot/internal/echo"
+	"stockbot/internal/help"
+	"stockbot/internal/stock"
 )
 
 func main() {
@@ -27,19 +31,27 @@ func main() {
 		log.Fatalf("amqp consume: %v", err)
 	}
 
-	log.Printf("stockbot echo listening on %s (%s)", cfg.QueueName, cfg.RequestedRoutingKey)
+	log.Printf("stockbot listening on %s (%s)", cfg.QueueName, cfg.RequestedRoutingKey)
+	stockHandler := stock.NewHandler(cfg.StockCSVURLTemplate, nil)
+
+	// Build command registry
+	reg := commands.NewRegistry()
+
+	reg.Register("echo", echo.Handle)
+	reg.Register("help", help.Handle)
+	reg.Register("stock", stockHandler.Handle)
 
 	for d := range msgs {
-		var req echo.BotRequested
+		var req contracts.BotRequest
 		if err := json.Unmarshal(d.Body, &req); err != nil {
 			log.Printf("skip invalid payload: %v", err)
 			continue
 		}
-		if resp, ok := echo.Handle(req); ok {
+		if resp, ok := reg.Dispatch(req); ok {
 			if err := client.PublishJSON(cfg.ExchangeName, cfg.ResponseRoutingKey, resp); err != nil {
 				log.Printf("publish response error: %v", err)
 			} else {
-				log.Printf("echoed to room %s", resp.RoomID)
+				log.Printf("handled %s for room %s", req.Command, resp.RoomID)
 			}
 		}
 	}
