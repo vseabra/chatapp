@@ -29,6 +29,11 @@ services:
     environment:
       PORT: 8181
       RABBITMQ_URI: "amqp://guest:guest@rabbitmq:5672/"
+      RABBITMQ_EXCHANGE: "chat.events"
+      RABBITMQ_EXCHANGE_TYPE: "topic"
+      RABBITMQ_KEY_REQUESTED: "bot.requested"
+      RABBITMQ_KEY_RESPONSE: "bot.response.submit"
+      RABBITMQ_QUEUE: "bot.stockbot"
 
   mongodb:
     image: mongo:6.0
@@ -54,3 +59,21 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
     volumes:
       - ./data/rabbitmq:/var/lib/rabbitmq:rw
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    depends_on:
+      - chat-api
+    restart: unless-stopped
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./frontend:/app:delegated
+      - /app/node_modules
+    command: >
+      sh -c "npm ci
+      && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort"
