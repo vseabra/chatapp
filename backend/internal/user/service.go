@@ -88,9 +88,9 @@ func (s *service) Login(ctx context.Context, req LoginRequest, jwtSecret string,
 	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) != nil {
 		return nil, errors.New("invalid credentials")
 	}
-	tok, err := auth.GenerateToken(jwtSecret, expiresIn, u.ID.Hex(), u.Email)
+	token, err := auth.GenerateToken(jwtSecret, expiresIn, u.ID.Hex(), u.Email)
 	if err != nil {
 		return nil, err
 	}
-	return &LoginResponse{AccessToken: tok}, nil
+	return &LoginResponse{AccessToken: token, UserId: u.ID.Hex(), UserName: u.Name}, nil
 }

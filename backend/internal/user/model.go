@@ -39,4 +39,6 @@ type LoginRequest struct {
 // LoginResponse is the response containing an access token.
 type LoginResponse struct {
 	AccessToken string `json:"accessToken"`
+	UserId      string `json:"userId"`
+	UserName    string `json:"userName"`
 }

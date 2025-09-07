@@ -36,7 +36,7 @@ func (h *Hub) WithPublisher(p *Publisher) *Hub {
 
 func (h *Hub) RegisterRoutes(r *gin.Engine, cfg config.AppConfig) {
 	group := r.Group(constants.APIv1 + "/ws")
-	group.Use(auth.AuthMiddleware(cfg.JWTSecret))
+	group.Use(auth.WebSocketAuthMiddleware(cfg.JWTSecret))
 	group.GET("", h.handleWS)
 }
 
